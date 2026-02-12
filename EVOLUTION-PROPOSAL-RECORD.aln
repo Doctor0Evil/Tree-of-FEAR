@@ -1,0 +1,94 @@
+TITLE Evolution and Donutloop Ledger Schema (public contract v1)
+SECTION,EVOLUTION-PROPOSAL-RECORD
+
+ROW,meta,schema,scalar,schemaid,evolution-proposal-record-v1,string,primarykey,Canonical EvolutionProposalRecord schema ID
+ROW,meta,schema,scalar,version,1.0.0,string,nonnull,Version tag
+ROW,meta,schema,scalar,createdby,bostrom18sd2ujv24ual9c9pshtxys6j8knh6xaead9ye7,string,nonnull,Creator DID
+ROW,meta,schema,scalar,createdat,2026-02-12T00:00:00Z,timestamp,nonnull,Creation time
+ROW,meta,schema,array,juristags,US|EU|FDASaMD|EURORIGHTS2023,string,nonnull,Applicable regimes
+
+SECTION,EVOLVE-CORE
+ROW,core,ids,scalar,proposalid,,string,primarykey,Unique proposal ID
+ROW,core,ids,scalar,subjectid,,string,nonnull,Rights-bearing subject ID
+ROW,core,kind,enum,kind,CapabilityUpgrade|CapabilityDowngrade|PolicyChange|string,nonnull,Proposal kind
+ROW,core,kind,array,domaintags,,string,nonnull,Domain tags for policy/risk scoping
+
+ROW,core,state,scalar,rohbefore,,float,clamp0.0,0.30,RoH value before transition (CapControlledHuman)
+ROW,core,state,scalar,rohafter,,float,clamp0.0,0.30,RoH value after transition (CapControlledHuman)
+ROW,core,state,scalar,rohceiling,,float,const0.30,Non-waivable RoH ceiling for CapControlledHuman
+ROW,core,state,scalar,effectboundmin,,float,nullable,Lower bound on effect if applicable
+ROW,core,state,scalar,effectboundmax,,float,nullable,Upper bound on effect if applicable
+
+ROW,core,decision,enum,decision,Allowed|Denied|Deferred,string,nonnull,Guard pipeline decision
+ROW,core,decision,scalar,decisionreason,,string,nonnull,Human-readable reason or denial code
+
+ROW,core,ts,scalar,timestamputc,,timestamp,nonnull,UTC time proposal was evaluated
+ROW,core,hash,scalar,hexstamp,,string,nonnull,Hash of payload per internal hash spec
+
+SECTION,EVOLVE-GUARD-TRACE
+ROW,guard,roh,enum,rohguardresult,Pass|Fail,string,nonnull,Result of RoH guard against rohmodel.aln
+ROW,guard,neurorights,enum,neurorightsguardresult,Pass|Fail,string,nonnull,Result of neurorights guard
+ROW,guard,stake,enum,stakeguardresult,Pass|Fail,string,nonnull,Result of stake/multisig guard
+ROW,guard,capability,enum,capabilityguardresult,Pass|Fail,string,nonnull,Result of CapabilityGuard
+ROW,guard,reversal,enum,reversalconditionsresult,Pass|Fail|NotApplicable,string,nonnull,Result of ReversalConditions
+
+ROW,guard,policy,array,policyrefs,,string,nonnull,References into PolicyStack / envelope shards used in decision
+ROW,guard,ts,scalar,tssafemode,,bool,nonnull,True if evaluated in safe-mode / degraded kernel
+
+SECTION,EVOLVE-DIAGNOSTICS
+ROW,diag,tree,json,treeoflifeview,,json,readonly,Embedded Tree-of-Life view snapshot (TREE assets 0.0–1.0)
+ROW,diag,nature,json,naturepredicates,,json,readonly,NATURE predicates CALM_STABLE|OVERLOADED|RECOVERY|UNFAIR_DRAIN etc.
+ROW,diag,fear,json,fearDroplets,,json,readonly,FEAR-droplet / FateWindow diagnostic structures
+ROW,diag,role,enum,role,MODELONLYLABBENCH|CONTROLLEDHUMANGENERALUSE,string,nonnull,Context for this proposal
+ROW,diag,role,scalar,diagnosticrole,DIAGNOSTIC_ONLY,string,nonnull,Diagnostics role marker
+
+SECTION,EVOLVE-INVARIANTS
+ROW,inv,bounds,condition,roh-range,0.0 <= rohbefore <= rohceiling AND 0.0 <= rohafter <= rohceiling,string,readonly,RoH values are always within [0.0,rohceiling]
+ROW,inv,monotone,condition,roh-monotone,rohafter >= rohbefore,string,readonly,RoH is monotone non-decreasing per accepted step
+ROW,inv,ceiling,condition,rohceiling-fixed,rohceiling == 0.30,string,readonly,RoH ceiling is fixed at 0.30 for CapControlledHuman
+ROW,inv,guards,condition,guard-pipeline-order,RoHGuard -> NeurorightsGuard -> StakeMultisigGuard -> CapabilityGuard -> ReversalConditions,string,readonly,Guard pipeline evaluation order
+ROW,inv,guards,condition,donutloop-only-if-all-pass,decision == Allowed implies all guard results == Pass,string,readonly,Only proposals with all guards Pass may enter .donutloop.aln
+
+ROW,inv,diagnostics,condition,diagnostics-nonactuating,TreeOfLifeView|NATURE|FearDroplets MUST NOT appear as guards in CapabilityTransitionRequest or ReversalConditions,string,readonly,Diagnostics are advisory only
+ROW,inv,diagnostics,condition,diagnostics-nocapabilitywrite,Diagnostics MUST NOT write CapabilityState|ConsentState|BiophysicalEnvelopeSpec|PolicyStack,string,readonly,Diagnostics cannot actuate or mutate policy
+
+FOOTER,END-OF-EVOLUTION-PROPOSAL-RECORD-SCHEMA
+
+SECTION,DONUTLOOP-ENTRY
+
+ROW,meta,schema,scalar,schemaid,donutloop-entry-v1,string,primarykey,Canonical DonutloopEntry schema ID
+ROW,meta,schema,scalar,version,1.0.0,string,nonnull,Version tag
+ROW,meta,schema,scalar,createdby,bostrom18sd2ujv24ual9c9pshtxys6j8knh6xaead9ye7,string,nonnull,Creator DID
+ROW,meta,schema,scalar,createdat,2026-02-12T00:00:00Z,timestamp,nonnull,Creation time
+
+SECTION,DONUT-CORE
+ROW,core,ids,scalar,entryid,,string,primarykey,Unique donutloop entry ID
+ROW,core,ids,scalar,proposalid,,string,nonnull,Foreign key to EvolutionProposalRecord.proposalid
+ROW,core,ids,scalar,subjectid,,string,nonnull,Rights-bearing subject ID
+
+ROW,core,state,scalar,rohbefore,,float,clamp0.0,0.30,RoH value before accepted transition
+ROW,core,state,scalar,rohafter,,float,clamp0.0,0.30,RoH value after accepted transition
+ROW,core,state,scalar,rohceiling,,float,const0.30,Non-waivable RoH ceiling for CapControlledHuman
+
+ROW,core,decision,enum,decision,Allowed,string,nonnull,Only Allowed proposals may appear here
+ROW,core,decision,array,policyrefs,,string,nonnull,Policy/envelope references for this accepted change
+
+ROW,core,ts,scalar,timestamputc,,timestamp,nonnull,UTC time entry was written
+ROW,core,hash,scalar,prevhexstamp,,string,nonnull,Hash of previous donutloop entry (or genesis value)
+ROW,core,hash,scalar,hexstamp,,string,nonnull,Hash of this entry payload and prevhexstamp
+
+SECTION,DONUT-DIAGNOSTICS
+ROW,diag,tree,json,treeoflifeview,,json,readonly,Embedded Tree-of-Life view at acceptance
+ROW,diag,nature,json,naturepredicates,,json,readonly,NATURE predicates at acceptance
+ROW,diag,fear,json,fearDroplets,,json,readonly,FEAR-droplet / FateWindow diagnostics aligned to this entry
+ROW,diag,role,scalar,diagnosticrole,DIAGNOSTIC_ONLY,string,nonnull,Diagnostics role marker
+
+SECTION,DONUT-INVARIANTS
+ROW,inv,appendonly,condition,append-only,Existing DonutloopEntry rows MUST NEVER be updated or deleted,string,readonly,Donutloop is WORM log
+ROW,inv,hashchain,condition,hash-chain,For all i>0: H(payload_i, prevhexstamp_i) == hexstamp_i,string,readonly,Hash-linked immutability condition
+ROW,inv,writer,condition,sovereign-writer-only,Only SovereignKernel MAY write DonutloopEntry rows after all guards Pass,string,readonly,Single writer invariant
+ROW,inv,bounds,condition,roh-range,0.0 <= rohbefore <= rohceiling AND 0.0 <= rohafter <= rohceiling,string,readonly,RoH values are always within [0.0,rohceiling]
+ROW,inv,monotone,condition,roh-monotone,rohafter >= rohbefore,string,readonly,Accepted transitions are monotone in RoH
+ROW,inv,diagnostics,condition,diagnostics-nonactuating,Diagnostics fields MUST NOT be used as guards in CapabilityTransitionRequest or ReversalConditions,string,readonly,Diagnostics cannot actuate
+
+FOOTER,END-OF-DONUTLOOP-ENTRY-SCHEMA
