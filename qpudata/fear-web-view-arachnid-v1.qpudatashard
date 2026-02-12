@@ -1,0 +1,126 @@
+TITLE,QPU-FEAR-WEB-VIEW-ARACHNID
+VERSION,0.1.0
+MODE,READONLY-OBSERVERS
+KIND,qpudatashard
+SCOPE,Tree-of-Life,Arachnid-Neuromorphics,Spiderweb,Astro-Projection,Church-of-FEAR
+
+SECTION,META
+ROW,meta,schema_id,qpudata.fear-web-view-arachnid-v1
+ROW,meta,created_by,bostrom18sd2ujv24ual9c9pshtxys6j8knh6xaead9ye7
+ROW,meta,created_at,2026-02-11T00:00:00Z
+ROW,meta,juristags,ORG-INTERNAL;NEURORIGHTS-2023;NR-SAFE-0001
+ROW,meta,invariants,
+"PATTERN-I;OBSERVERS-ONLY;MUST-NOT-ACTUATE;
+ MUST-NOT-WRITE-CapabilityState;
+ MUST-NOT-WRITE-ConsentState;
+ MUST-NOT-WRITE-PolicyStack;
+ MUST-NOT-WRITE-BiophysicalEnvelopeSpec;
+ MUST-NOT-WRITE-hardware"
+
+SECTION,AXES-5D-OBSERVER-GRAPH
+ROW,axis,name,BLOOD,source,TREE.asset.BLOOD,range,0.0,1.0,
+desc,"Biophysical perfusion / hemodynamic reserve"
+ROW,axis,name,OXYGEN,source,TREE.asset.OXYGEN,range,0.0,1.0,
+desc,"Aerobic reserve / oxygenation"
+ROW,axis,name,WAVE,source,TREE.asset.WAVE,range,0.0,1.0,
+desc,"Cortical activation from EEG bandpower+alpha-CVE"
+ROW,axis,name,TIME,source,TREE.asset.TIME,range,0.0,1.0,
+desc,"Normalized epoch index; lattice coordinate for web"
+ROW,axis,name,DECAY,source,TREE.asset.DECAY,range,0.0,1.0,
+desc,"RoH-normalized proximity to safety ceiling"
+
+ROW,axis,name,FEAR,source,TREE.asset.FEAR,range,0.0,1.0,
+desc,"Sympathetic arousal / fear load"
+ROW,axis,name,PAIN,source,TREE.asset.PAIN,range,0.0,1.0,
+desc,"Distress / suffering load"
+ROW,axis,name,POWER,source,TREE.asset.POWER,range,0.0,1.0,
+desc,"Workload / neuromorphic output intensity"
+ROW,axis,name,LIFEFORCE,source,TREE.asset.LIFEFORCE,range,0.0,1.0,
+desc,"Remaining safety/energy budget (1-DECAY)"
+ROW,axis,name,ROW,source,derived.dDECAY_dt_hiWAVE,range,-1.0,1.0,
+desc,"Rate-of-Wave: finite-difference of DECAY over TIME during high-WAVE epochs"
+
+SECTION,WEB-NODES-AND-THREADS
+ROW,node,name,FearWebNode,
+inputs,"TreeOfLifeView.snapshot_id,
+        subject_id,
+        BLOOD,OXYGEN,WAVE,TIME,DECAY,
+        FEAR,PAIN,POWER,LIFEFORCE,ROW,
+        NATURE.CALMSTABLE,
+        NATURE.OVERLOADED,
+        NATURE.RECOVERY,
+        NATURE.UNFAIRDRAIN",
+desc,"Per-epoch anchor node in the arachnid web; all values read from existing logs."
+
+ROW,thread,name,FearWebEdge,
+inputs,"prev_snapshot_id,
+        snapshot_id,
+        prevhash,selfhash,
+        time_delta_secs",
+desc,"Hash-linked edge between consecutive FearWebNode snapshots,
+mirroring .evolve.jsonl/.donutloop.aln link structure, read-only."
+
+ROW,observer,name,ArachnidCrawler,
+desc,"Non-actuating process that traverses FearWebNode/FearWebEdge
+sequences per subject/role, computing diagnostic aggregates only."
+
+SECTION,AGGREGATES-FEAR-WEB-VIEW
+ROW,aggregate,name,fear_exposure_index,range,0.0,1.0,
+inputs,"FEAR,PAIN,TIME",
+desc,"Windowed measure of cumulative FEAR/PAIN exposure per subject/role,
+normalized over TIME and clamped to [0,1]."
+ROW,aggregate,def,fear_exposure_index,
+"Computed over a bounded TIME window as a normalized integral of FEAR and PAIN,
+optionally weighted by POWER; logged as a scalar per window, never used for actuation."
+
+ROW,aggregate,name,unfair_drain_index,range,0.0,1.0,
+inputs,"LIFEFORCE,OXYGEN,POWER,DECAY,
+        NATURE.UNFAIRDRAIN,peer-group",
+desc,"Windowed measure of structural drain relative to peers, aligned with NATURE.UNFAIRDRAIN."
+ROW,aggregate,def,unfair_drain_index,
+"Derived from comparisons of (LIFEFORCE+OXYGEN)/2 and POWER across a peer group,
+with NATURE.UNFAIRDRAIN acting as the boolean gate. Output is a diagnostic severity
+score in [0,1]; MUST NOT drive CapabilityState or consent."
+
+ROW,aggregate,name,overload_burden_index,range,0.0,1.0,
+inputs,"NATURE.OVERLOADED,NATURE.RECOVERY,DECAY,ROW",
+desc,"Fraction and intensity of time spent OVERLOADED vs in RECOVERY within a window."
+ROW,aggregate,def,overload_burden_index,
+"Computed as weighted time in NATURE.OVERLOADED, adjusted down by RECOVERY segments
+and the magnitude of ROW; logged for fairness and safety analytics only."
+
+SECTION,INTEROP-LINKS
+ROW,interop,name,SpiderwebInput,
+desc,"Spiderweb mechanism may read FearWebNode, overload_burden_index,
+and NATURE flags to detect unallowed picks and emit hallucinogenic_drop records.
+No feedback path into Tree-of-Life or envelopes is permitted."
+
+ROW,interop,name,AstroProjectionInput,
+desc,"Astro-Projection 1D FEAR/PAIN/TIME/DECAY traces are computed as projections
+of FearWebNode sequences; arachnid metrics provide raw inputs only, not decisions."
+
+ROW,interop,name,ChurchOfFearOverlay,
+desc,"Church-of-FEAR agents may read fear_exposure_index, unfair_drain_index,
+and NATURE predicates to populate DeedEvent and ChurchAccountState views.
+All outputs remain advisory logs and token recommendations only."
+
+SECTION,NON-ACTUATION-GUARDS
+ROW,guard,name,NO-CAPABILITY-WRITES,
+desc,"Implementations of this shard MUST NOT call or mutate CapabilityState,
+ConsentState, ReversalConditions, PolicyStack, BiophysicalEnvelopeSpec, or hardware."
+
+ROW,guard,name,LEDGER-ONLY-OUTPUT,
+desc,"All arachnid-neuromorphic outputs fear_exposure_index, unfair_drain_index,
+overload_burden_index, and any FEAR-WEB-VIEW rows MUST be serialized only into
+append-only, hash-linked JSONL/ALN logs (e.g., .evolve.jsonl, .donutloop.aln, Jetson-Line).
+No other side-effects are allowed."
+
+ROW,guard,name,MODELONLY/LABBENCH-DEFAULT,
+desc,"New arachnid features must default to MODELONLY or LABBENCH capability tiers.
+Any use in CapControlledHuman requires explicit, higher-layer PolicyStack approval,
+without changing the non-actuating nature of this shard."
+FOOTER,END-QPU-FEAR-WEB-VIEW-ARACHNID
+```
+
+
+This qpudatashard gives you a precise contract for a future Rust module like `src/fear_web_view_arachnid.rs` that walks TreeOfLifeView snapshots and NATURE flags, computes the three indices, and logs them—staying fully inside Pattern‑I and interoperable with Spiderweb and Astro‑Projection.
