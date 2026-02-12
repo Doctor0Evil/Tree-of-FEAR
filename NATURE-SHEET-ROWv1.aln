@@ -1,0 +1,73 @@
+SECTION,NATURE-SHEET-ROW,V1
+
+ROW,meta,kind,enum,NATURE_SHEET_ROW,string,nonnull,Diagnostic-only forest proposal window
+ROW,meta,role,enum,DIAGNOSTIC_ONLY,string,nonnull,Observer-tier record
+ROW,meta,noactuation,true,bool,nonwaivable,MUST NOT drive capability or policy
+ROW,meta,nocapabilitywrite,true,bool,nonwaivable,MUST NOT write CapabilityState
+ROW,meta,nopolicywrite,true,bool,nonwaivable,MUST NOT write PolicyStack or envelopes
+ROW,meta,logstreams,.evolve.jsonl.donutloop.aln,string,nonnull,Canonical sinks
+
+ROW,field,timestamp_ms,int,ms-since-unix,int64,nonnull,Snapshot time for this window
+ROW,field,proposal_id,string,proposal-key,string,nonnull,ID of forest proposal or variant
+ROW,field,thought_bubble_id,string,tb-key,string,nullable,Grouping key for human thought-bubble
+ROW,field,site_id,string,forest-patch-id,string,nonnull,Canonical forest or watershed patch
+
+ROW,field,roh_score,scalar,0.0-0.3,float,nonnull,Risk-of-Harm in this window (clamped)
+ROW,field,roh_ceiling,scalar,0.30-0.30,float,nonnull,Hard RoH ceiling for CapControlledHuman
+
+ROW,field,biophysical_envelope.within_bounds,flag,,bool,nonnull,True iff all forest envelopes inside minsafe/maxsafe
+ROW,field,biophysical_envelope.violated_axes,json,AxisList,object,nonnull,List of any violated axes or empty
+
+ROW,field,tree_layer.DECAY,scalar,0.0-1.0,float,nonnull,Forest DECAY asset from Tree-of-Life style view
+ROW,field,tree_layer.LIFEFORCE,scalar,0.0-1.0,float,nonnull,Forest LIFEFORCE asset
+ROW,field,tree_layer.FEAR,scalar,0.0-1.0,float,nonnull,Forest FEAR stress asset
+ROW,field,tree_layer.OXYGEN,scalar,0.0-1.0,float,nonnull,Forest OXYGEN / respiration asset
+ROW,field,tree_layer.UNFAIRDRAIN,scalar,0.0-1.0,float,nonnull,Forest UNFAIRDRAIN index vs peers
+
+ROW,field,nature_predicates.CALM_STABLE,flag,,bool,nonnull,Window CALMSTABLE over forest TREE assets
+ROW,field,nature_predicates.OVERLOADED,flag,,bool,nonnull,Window OVERLOADED over forest TREE assets
+ROW,field,nature_predicates.RECOVERY,flag,,bool,nonnull,Window RECOVERY following overload
+ROW,field,nature_predicates.UNFAIR_DRAIN,flag,,bool,nonnull,Window UNFAIRDRAIN for this patch
+
+ROW,field,honeybee_predicates.FEAR,scalar,0.0-1.0,float,nonnull,FEAR scalar from Cybernetical-Honeybee channel
+ROW,field,honeybee_predicates.DECAY,scalar,0.0-1.0,float,nonnull,DECAY scalar from bee diagnostics
+ROW,field,honeybee_predicates.LIFEFORCE,scalar,0.0-1.0,float,nonnull,LIFEFORCE scalar from bee diagnostics
+ROW,field,honeybee_predicates.OXYGEN,scalar,0.0-1.0,float,nonnull,OXYGEN scalar from bee diagnostics
+ROW,field,honeybee_predicates.UNFAIRDRAIN,scalar,0.0-1.0,float,nonnull,UNFAIRDRAIN scalar from bee diagnostics
+
+ROW,field,fate_window.window_id,string,fate-window-id,string,nonnull,Diagnostic FateWindow identifier
+ROW,field,fate_window.role,enum,DIAGNOSTIC_ONLY,string,nonnull,Window is observer-only
+ROW,field,fate_window.open_ms,int,ms-since-unix,int64,nonnull,Window open time
+ROW,field,fate_window.close_ms,int,ms-since-unix,int64,nonnull,Window close time
+ROW,field,fate_window.constant_fear_forbidden,flag,,bool,nonwaivable,MUST be true; constant high FEAR illegal
+
+ROW,field,biotree_summary.BIOTREE.decay_level,enum,lowmediumhighrisingfalling,string,nonnull,Human-binary summary of DECAY
+ROW,field,biotree_summary.BIOTREE.lifeforce_level,enum,lowmediumhighrising,string,nonnull,Human-binary summary of LIFEFORCE
+ROW,field,biotree_summary.BIOTREE.fear_level,enum,lowmediumhigh,string,nonnull,Human-binary summary of FEAR
+ROW,field,biotree_summary.BIOTREE.oxygen_level,enum,lowmediumhigh,string,nonnull,Human-binary summary of OXYGEN
+ROW,field,biotree_summary.BIOTREE.unfair_drain_level,enum,lowmediumhigh,string,nonnull,Human-binary summary of UNFAIRDRAIN
+ROW,field,biotree_summary.BIOTREE.notes,string,free-text,string,nullable,Short human notes about forest state
+
+ROW,field,biotree_summary.NATURE.label_main,string,nature-label,string,nonnull,Primary NATURE label e.g. overloaded-but-recovering
+ROW,field,biotree_summary.NATURE.label_secondary,string,nature-label,string,nullable,Secondary NATURE label e.g. not-crisis
+ROW,field,biotree_summary.NATURE.confidence_self,scalar,0.0-1.0,float,nonnull,Self-rated confidence in NATURE label
+ROW,field,biotree_summary.NATURE.notes,string,free-text,string,nullable,Human notes about reversibility / strain
+
+ROW,field,biotree_summary.GOAL.intent,string,enum-intent,string,nonnull,Advisory-only intent e.g. diagnose-only-no-actuation
+ROW,field,biotree_summary.GOAL.asks,json,AskList,object,nonnull,List of advisory questions or comparisons
+ROW,field,biotree_summary.GOAL.notes,string,free-text,string,nullable,Clarifying notes on desired analysis
+
+ROW,field,non_actuation.ROLE,enum,DIAGNOSTIC_ONLY,string,nonnull,Explicitly marks this row as observer-tier
+ROW,field,non_actuation.NO_ACTUATION,flag,,bool,nonwaivable,Row MUST NOT actuate devices or envelopes
+ROW,field,non_actuation.NO_POLICY_WRITE,flag,,bool,nonwaivable,Row MUST NOT write policy or ReversalConditions
+ROW,field,non_actuation.NO_CAPABILITY_WRITE,flag,,bool,nonwaivable,Row MUST NOT write CapabilityState
+
+ROW,field,hash_prev,string,hex,string,nullable,Previous row hash for hash-linking
+ROW,field,hash_self,string,hex,string,nonnull,Current row hash preimage for Googolswarm anchoring
+
+ROW,semantics,roh_guard,expr,roh_score<=roh_ceiling,bool,nonwaivable,RoH MUST NEVER exceed 0.30
+ROW,semantics,diagnostic_only,true,bool,nonwaivable,Row is Pattern-I observer only
+ROW,semantics,allowed_sinks,.evolve.jsonl.donutloop.aln.HUD.AICHAT.OFFLINE-ANALYTICS,string,nonnull,View-only sinks
+ROW,semantics,forbidden_sinks,CAPABILITY-ENGINE.REVERSAL-KERNEL.REWARD-MODEL.STAKE-LEDGER,string,nonnull,MUST NOT be used as guards
+
+FOOTER,END-OF-SHARD
