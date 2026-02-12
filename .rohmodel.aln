@@ -1,0 +1,13 @@
+TITLE RoH Model and Biophysical Envelope Ceiling (public contract v1)
+SECTION,ROH-MODEL
+
+ROW,model,scalar,roh_global_ceiling,0.30,float,const,Global RoH ceiling for CapControlledHuman
+ROW,model,scalar,roh_min,0.0,float,const,Global RoH lower bound
+ROW,model,array,weights,,float,readonly,Non-negative weights summing to 1.0 per step
+
+SECTION,BIOPHYSICAL-ENVELOPE-SPEC
+ROW,env,cap,enum,capabilityclass,CapControlledHuman|string,nonnull,Capability class
+ROW,env,roh,scalar,rohceiling,,float,const0.30,Non-waivable RoH ceiling for this class
+ROW,env,roh,condition,rohceiling-match,rohceiling == roh_global_ceiling,string,readonly,Envelope must match global ceiling
+
+FOOTER,END-OF-ROH-MODEL-SPEC
